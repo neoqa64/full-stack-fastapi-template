@@ -45,6 +45,40 @@ def read_items(
     return ItemsPublic(data=items_public, count=count)
 
 
+@router.get("/search", response_model=ItemsPublic)
+def search_items(
+    session: SessionDep,
+    current_user: CurrentUser,
+    q: str,
+    skip: int = 0,
+    limit: int = 100,
+) -> Any:
+    """
+    Search items by title (case-insensitive substring match).
+
+    Non-superusers see only their own items. Empty `q` returns an empty list
+    rather than the full catalogue.
+    """
+    if not q:
+        return ItemsPublic(data=[], count=0)
+
+    pattern = f"%{q.lower()}%"
+    base = select(Item).where(func.lower(Item.title).like(pattern))
+    count_base = select(func.count()).select_from(Item).where(
+        func.lower(Item.title).like(pattern)
+    )
+    if not current_user.is_superuser:
+        base = base.where(Item.owner_id == current_user.id)
+        count_base = count_base.where(Item.owner_id == current_user.id)
+
+    count = session.exec(count_base).one()
+    items = session.exec(
+        base.order_by(col(Item.created_at).desc()).offset(skip).limit(limit)
+    ).all()
+    items_public = [ItemPublic.model_validate(item) for item in items]
+    return ItemsPublic(data=items_public, count=count)
+
+
 @router.get("/{id}", response_model=ItemPublic)
 def read_item(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
