@@ -1,0 +1,61 @@
+{
+  "bugs": [
+    {
+      "id": "BUG-001",
+      "title": "Password reset token does not expire",
+      "description": "Reset tokens issued by /password-recovery/{email} remain valid indefinitely. A leaked token from months ago can still reset the user's password. Should expire after ~1 hour.",
+      "severity": "high",
+      "status": "open",
+      "affected_files": [
+        "backend/app/api/routes/login.py",
+        "backend/app/utils.py"
+      ],
+      "reported_at": "2026-04-22"
+    },
+    {
+      "id": "BUG-002",
+      "title": "Item delete authorizes non-owner when superuser flag is set client-side",
+      "description": "DELETE /items/{id} appears to trust an is_superuser flag derived from the user record without re-checking ownership in some edge cases. A regular user crafting a request can sometimes delete items belonging to other users. Needs hardened ownership check.",
+      "severity": "critical",
+      "status": "open",
+      "affected_files": [
+        "backend/app/api/routes/items.py"
+      ],
+      "reported_at": "2026-05-02"
+    },
+    {
+      "id": "BUG-003",
+      "title": "Signup endpoint has no rate limiting",
+      "description": "POST /users/signup accepts unlimited requests from the same IP, enabling enumeration of registered emails via the 400 duplicate-email response and trivial account-spam attacks.",
+      "severity": "medium",
+      "status": "open",
+      "affected_files": [
+        "backend/app/api/routes/users.py"
+      ],
+      "reported_at": "2026-04-30"
+    },
+    {
+      "id": "BUG-004",
+      "title": "Password recovery email renders raw HTML from user-supplied address",
+      "description": "The recovery email template interpolates the supplied email address into the HTML body without escaping, allowing an HTML injection if an attacker registers an email like '<img src=x onerror=...>'. The email is not delivered to the attacker but to the existing owner, who sees the injected markup.",
+      "severity": "high",
+      "status": "open",
+      "affected_files": [
+        "backend/app/api/routes/login.py",
+        "backend/app/email-templates/build/reset_password.html"
+      ],
+      "reported_at": "2026-05-08"
+    },
+    {
+      "id": "BUG-005",
+      "title": "Update-password endpoint accepts empty new_password",
+      "description": "PATCH /users/me/password validates that current_password matches but does not enforce a minimum length on new_password, allowing a user to set their password to an empty string and lock themselves out.",
+      "severity": "medium",
+      "status": "open",
+      "affected_files": [
+        "backend/app/api/routes/users.py"
+      ],
+      "reported_at": "2026-05-11"
+    }
+  ]
+}
